@@ -78,6 +78,7 @@ const App: Component = () => {
           u_world: m4.identity(),
           u_worldInverseTranspose: m4.identity(),
           u_worldViewProjection: m4.identity(),
+          u_aspect: gl.canvas.width / gl.canvas.height,
           // time: time * 0.001,
           // resolution: [gl.canvas.width, gl.canvas.height],
         };
