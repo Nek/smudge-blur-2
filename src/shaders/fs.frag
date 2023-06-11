@@ -19,8 +19,5 @@ void main() {
   textCoord.x *= diffuseAspect;
   textCoord.x -= (1.0 - u_aspect * diffuseAspect) / 2.0;
   vec4 diffuseColor = texture(u_diffuse, textCoord);
-  if (diffuseColor.a < 0.1) {
-    discard;
-  }
   outColor = diffuseColor;
 }
