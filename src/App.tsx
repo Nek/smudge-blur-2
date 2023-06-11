@@ -89,7 +89,7 @@ const App: Component = () => {
       const bufferInfo2 = twgl.createBufferInfoFromArrays(gl, arrays2);
 
 
-      const videoFb = twgl.createFramebufferInfo(gl, [{format: gl.RGBA, type: gl.UNSIGNED_BYTE, min: gl.LINEAR, wrap: gl.CLAMP_TO_EDGE,}], 1920, 1080);
+      // const videoFb = twgl.createFramebufferInfo(gl, [{format: gl.RGBA, type: gl.UNSIGNED_BYTE, min: gl.LINEAR, wrap: gl.CLAMP_TO_EDGE,}], 1920, 1080);
 
       const programInfo1 = twgl.createProgramInfo(gl, [vs, fs]);
       const programInfo2 = twgl.createProgramInfo(gl, [vs2, fs2]);
@@ -117,22 +117,42 @@ const App: Component = () => {
         // twgl.drawBufferInfo(gl, bufferInfo1);
       
 
-        twgl.bindFramebufferInfo(gl, null);
+        // twgl.bindFramebufferInfo(gl, null);
+        // twgl.resizeCanvasToDisplaySize(gl.canvas as HTMLCanvasElement);
+        // gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+
+        // gl.clearColor(0, 0, 0, 0);
+        // gl.clear(gl.COLOR_BUFFER_BIT);
+        const fbTexture = twgl.createTexture(gl, {
+          src: uvGridUrl,
+        });
+        // const uniforms2 = {
+        //   u_diffuse: fbTexture
+        // };
+    
+        // gl.useProgram(programInfo2.program);
+        // twgl.setBuffersAndAttributes(gl, programInfo2, bufferInfo2);
+        // twgl.setUniforms(programInfo2, uniforms2);
+        // twgl.drawBufferInfo(gl, bufferInfo2);
+        
+
+
+
         twgl.resizeCanvasToDisplaySize(gl.canvas as HTMLCanvasElement);
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
         gl.clearColor(0, 0, 0, 0);
         gl.clear(gl.COLOR_BUFFER_BIT);
-        const fbTexture = twgl.createTexture(gl, {
-          src: uvGridUrl,
-        });
-        const uniforms2 = {
-          u_diffuse: fbTexture
+
+        const uniforms = {
+          u_diffuse: fbTexture,
+          // time: time * 0.001,
+          // resolution: [gl.canvas.width, gl.canvas.height],
         };
-    
+
         gl.useProgram(programInfo2.program);
         twgl.setBuffersAndAttributes(gl, programInfo2, bufferInfo2);
-        twgl.setUniforms(programInfo2, uniforms2);
+        twgl.setUniforms(programInfo2, uniforms);
         twgl.drawBufferInfo(gl, bufferInfo2);
       }
 
