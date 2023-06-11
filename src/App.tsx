@@ -12,15 +12,16 @@ import uvGridUrl from "./assets/uvgrid.jpg";
 console.log(uvGridUrl);
 
 const App: Component = () => {
-  let canvas: HTMLCanvasElement | undefined;
+  let canvasEl: HTMLCanvasElement | undefined;
+  let videoEl: HTMLVideoElement | undefined;
 
   onMount(() => {
-    if (canvas !== undefined) {
+    if (canvasEl !== undefined) {
 
       twgl.setDefaults({attribPrefix: "a_"});
       const m4 = twgl.m4;
 
-      const gl = canvas.getContext("webgl2");
+      const gl = canvasEl.getContext("webgl2");
       if (gl === null) {
         throw new Error("WebGL 2.0 is not supported");
       }    
@@ -30,7 +31,6 @@ const App: Component = () => {
           type: gl.FLOAT,
           normalize: false,
           numComponents: 2,
-          attrib: "a_position",
           data: [
             -1, -1,
             -1, 1,
@@ -46,11 +46,11 @@ const App: Component = () => {
           attrib: "a_texcoord",
           data: [
             0, 0,
-            0, 1,
-            1, 1,
+            0, -1,
+            -1, -1,
             0, 0,
-            1, 1,
-            1, 0,
+            -1, -1,
+            -1, 0,
         ]},
       };
 
@@ -60,18 +60,18 @@ const App: Component = () => {
 
       const camera = m4.identity();
       const view = m4.identity();
-      const texture = twgl.createTexture(gl, {
-        src: uvGridUrl,
-      });
 
       function render(time: number) {
         if (gl === null) return;
+        if (videoEl?.readyState === undefined || videoEl?.readyState < 2) return;
         twgl.resizeCanvasToDisplaySize(gl.canvas as HTMLCanvasElement);
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
         gl.clearColor(0, 0, 0, 0);
         gl.clear(gl.COLOR_BUFFER_BIT);
-    
+        const texture = twgl.createTexture(gl, {
+          src: videoEl,
+        });
         const uniforms = {
           u_diffuse: texture,
           u_viewInverse: camera,
@@ -98,9 +98,47 @@ const App: Component = () => {
     }
   });
 
+  async function startCam() {
+    if (!videoEl) return;
+
+    const constraints: MediaStreamConstraints = {
+      audio: false,
+      video: {
+        frameRate: 60,
+        width: 1920,
+        height: 1080,
+      },
+    };
+
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    videoEl.srcObject = stream;
+
+    const mediaStream = await navigator.mediaDevices.getUserMedia(constraints)
+
+    videoEl.srcObject = mediaStream;
+    videoEl.onloadedmetadata = () => {
+      if (!videoEl) return;
+      videoEl.play();
+    };
+  }
+
   return (
-    <div class={styles.App}>
-      <canvas width={1920} height={1080} ref={canvas}></canvas>
+    <div class={styles.App} onclick={startCam}>
+      <video
+        crossorigin="anonymous"
+        style={{
+          position: "absolute",
+          "z-index": -1,
+          display: "none",
+        }}
+        width={1920}
+        height={1080}
+        controls={false}
+        autoplay={true}
+        muted={true}
+        ref={videoEl}
+      />
+      <canvas width={1920} height={1080} ref={canvasEl}></canvas>
     </div>
   );
 };
