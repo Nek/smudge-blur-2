@@ -4,76 +4,61 @@ import logo from './logo.svg';
 import styles from './App.module.css';
 import createRAF from "@solid-primitives/raf";
 import * as twgl from "twgl.js";
-
-const vs = `
-attribute vec4 position;
-
-void main() {
-  gl_Position = position;
-}
-`
-const fs = `
-precision mediump float;
-
-uniform vec2 resolution;
-uniform float time;
-
-void main() {
-  vec2 uv = gl_FragCoord.xy / resolution;
-  float color = 0.0;
-  // lifted from glslsandbox.com
-  color += sin( uv.x * cos( time / 3.0 ) * 60.0 ) + cos( uv.y * cos( time / 2.80 ) * 10.0 );
-  color += sin( uv.y * sin( time / 2.0 ) * 40.0 ) + cos( uv.x * sin( time / 1.70 ) * 40.0 );
-  color += sin( uv.x * sin( time / 1.0 ) * 10.0 ) + sin( uv.y * sin( time / 3.50 ) * 80.0 );
-  color *= sin( time / 10.0 ) * 0.5;
-
-  gl_FragColor = vec4( vec3( color * 0.5, sin( color + time / 2.5 ) * 0.75, color ), 1.0 );
-}
-`
+import vs from "./shaders/vs.vert?raw";
+import fs from "./shaders/fs.frag?raw";
 
 const App: Component = () => {
   let canvas: HTMLCanvasElement | undefined;
 
   onMount(() => {
     if (canvas !== undefined) {
-      const gl = canvas.getContext("webgl");
+      const gl = canvas.getContext("webgl2");
       if (gl === null) {
-        throw new Error("WebGL is not supported");
+        throw new Error("WebGL 2.0 is not supported");
       }
-
-      const [_, start] = createRAF(
-        function render(time: number) {
-          if (gl === null) return;
-          twgl.resizeCanvasToDisplaySize(gl.canvas as HTMLCanvasElement);
-          gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
       
-          const uniforms = {
-            time: time * 0.001,
-            resolution: [gl.canvas.width, gl.canvas.height],
-          };
-      
-          gl.useProgram(programInfo.program);
-          twgl.setBuffersAndAttributes(gl, programInfo, bufferInfo);
-          twgl.setUniforms(programInfo, uniforms);
-          twgl.drawBufferInfo(gl, bufferInfo);
-  
-          // raf(render);
-        }
-      );
-      const programInfo = twgl.createProgramInfo(gl, [vs, fs]);
 
-      const arrays = {
-        position: [
-          -1, -1, 0,
-          1, -1, 0,
-          -1, 1, 0,
-          -1, 1, 0,
-          1, -1, 0,
-          1, 1, 0,
-        ],
+      const arrays: twgl.Arrays = {
+        position: {
+          type: gl.FLOAT,
+          normalize: false,
+          numComponents: 2,
+          attrib: "a_position",
+          data: [
+            0, 0,
+            0, 0.5,
+            0.7, 0,
+        ]},
       };
 
       const bufferInfo = twgl.createBufferInfoFromArrays(gl, arrays);
+
+      const programInfo = twgl.createProgramInfo(gl, [vs, fs]);
+
+      function render(time: number) {
+        if (gl === null) return;
+        twgl.resizeCanvasToDisplaySize(gl.canvas as HTMLCanvasElement);
+        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+    
+        const uniforms = {
+          // time: time * 0.001,
+          // resolution: [gl.canvas.width, gl.canvas.height],
+        };
+    
+        gl.useProgram(programInfo.program);
+        twgl.setBuffersAndAttributes(gl, programInfo, bufferInfo);
+        // twgl.setUniforms(programInfo, uniforms);
+        twgl.drawBufferInfo(gl, bufferInfo);
+        // gl.drawArrays(gl.TRIANGLES, 0, 3)
+        // raf(render);
+      }
+
+      const [_, start] = createRAF(
+        render
+      );
 
       start();
     }
@@ -81,7 +66,7 @@ const App: Component = () => {
 
   return (
     <div class={styles.App}>
-      <canvas ref={canvas}></canvas>
+      <canvas width={1920} height={1080} ref={canvas}></canvas>
     </div>
   );
 };
