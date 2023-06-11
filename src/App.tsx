@@ -56,8 +56,9 @@ const App: Component = () => {
       const arrays2: twgl.Arrays = {
         position: {
           type: gl.FLOAT,
-          normalize: false,  
+          normalize: false,
           numComponents: 2,
+          attrib: "a_position",
           data: [
             -1, -1,
             -1, 1,
@@ -65,19 +66,23 @@ const App: Component = () => {
             -1, -1,
             1, 1,
             1, -1,
-        ]},
+          ]
+        },
         texcoord: {
           type: gl.FLOAT,
           normalize: false,
           numComponents: 2,
-          data: [
-            0, 0,
-            0, -1,
-            -1, -1,
-            0, 0,
-            -1, -1,
-            -1, 0,
-        ]},
+          attrib: "a_texcoord",
+          data:
+            [
+              0, 1,
+              0, 0,
+              1, 0,
+              0, 1,
+              1, 0,
+              1, 1,
+            ]
+        },
       };
 
       const bufferInfo1 = twgl.createBufferInfoFromArrays(gl, arrays);

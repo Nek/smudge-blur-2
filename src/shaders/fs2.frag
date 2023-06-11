@@ -12,9 +12,5 @@ out vec4 outColor;
  
 void main() {
   vec4 diffuseColor = texture(u_diffuse, v_texCoord);
-  diffuseColor.r = v_texCoord.r;
-  diffuseColor.g = v_texCoord.g;
-  diffuseColor.b = 0.;
-  diffuseColor.a = 1.;
   outColor = diffuseColor;
 }
