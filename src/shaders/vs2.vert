@@ -9,6 +9,6 @@ out vec2 v_texCoord;
 
 // all shaders have a main function
 void main() {
-  v_texCoord = a_texcoord;
+  v_texCoord = vec4(a_texcoord, 0, 1).xy;
   gl_Position = a_position;
 }
