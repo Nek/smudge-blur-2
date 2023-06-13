@@ -4,8 +4,8 @@ import styles from './App.module.css';
 import createRAF from "@solid-primitives/raf";
 import * as twgl from "twgl.js";
 import basicVs from "./shaders/basic.vert?raw";
-import drawTextureCenteredFs from "./shaders/draw_texture_centered.frag?raw";
-import drawTextureBasicFs from "./shaders/draw_texture_basic.frag?raw";
+import textureCenteredFs from "./shaders/texture_centered.frag?raw";
+import textureBasicFs from "./shaders/texture_basic.frag?raw";
 
 const App: Component = () => {
   let canvasEl: HTMLCanvasElement | undefined;
@@ -13,7 +13,6 @@ const App: Component = () => {
 
   onMount(() => {
     if (canvasEl !== undefined) {
-
       twgl.setDefaults({ attribPrefix: "a_" });
 
       const gl = canvasEl.getContext("webgl2");
@@ -85,8 +84,8 @@ const App: Component = () => {
 
       const videoFramebufferInfo = twgl.createFramebufferInfo(gl, undefined, 1920, 1080);
 
-      const drawTexturedQuadCenteredProgramInfo = twgl.createProgramInfo(gl, [basicVs, drawTextureCenteredFs]);
-      const drawTexturedQuadProgramInfo = twgl.createProgramInfo(gl, [basicVs, drawTextureBasicFs]);
+      const drawTexturedQuadCenteredProgramInfo = twgl.createProgramInfo(gl, [basicVs, textureCenteredFs]);
+      const drawTexturedQuadProgramInfo = twgl.createProgramInfo(gl, [basicVs, textureBasicFs]);
 
       const videoTexture = twgl.createTexture(gl, { flipY: 1 });
 
