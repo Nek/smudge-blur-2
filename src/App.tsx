@@ -90,14 +90,12 @@ const App: Component = () => {
       const drawFxBufferInfo = twgl.createBufferInfoFromArrays(gl, uvQuad);
       const drawFxProgramInfo = twgl.createProgramInfo(gl, [basicVs, feedbackFxFs]);
 
-      const videoFramebufferInfo = twgl.createFramebufferInfo(gl, undefined, window.innerWidth, window.innerHeight);
+      const currFrameFramebufferInfo = twgl.createFramebufferInfo(gl, undefined, window.innerWidth, window.innerHeight);
       const videoTexture = twgl.createTexture(gl);
 
-      const feedbackFramebufferInfo = twgl.createFramebufferInfo(gl, undefined, window.innerWidth, window.innerHeight);
+      const prevFrameFramebufferInfo = twgl.createFramebufferInfo(gl, undefined, window.innerWidth, window.innerHeight);
 
       function drawTextureCentered(gl: WebGLRenderingContext | WebGL2RenderingContext, texture: WebGLTexture) {
-        gl.clearColor(0, 0, 0, 0);
-        gl.clear(gl.COLOR_BUFFER_BIT);
 
         const drawTexturedQuadBasicUniforms = {
           u_diffuse: texture,
@@ -110,11 +108,7 @@ const App: Component = () => {
       }
 
       function drawTextureFlipped(gl: WebGLRenderingContext | WebGL2RenderingContext, texture: WebGLTexture | WebGLRenderbuffer) {
-        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-
-        gl.clearColor(0, 0, 0, 0);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-
+      
         const drawTexturedQuadCenteredUniforms = {
           u_diffuse: texture,
           u_aspect: gl.canvas.width / gl.canvas.height,
@@ -127,17 +121,12 @@ const App: Component = () => {
       }
 
       function drawFeedbackFx(gl: WebGLRenderingContext | WebGL2RenderingContext, feedback: WebGLTexture | WebGLRenderbuffer, texture: WebGLTexture | WebGLRenderbuffer, time: number) {
-        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-
-        gl.clearColor(0, 0, 0, 0);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-
         const drawFxUniforms = {
           u_feedback: feedback,
           u_image: texture,
           u_scale: 0.001,
-          u_zoom: [1.001, 1.001],
-          u_noise_scale: [1.75,1.75],
+          u_zoom: [1.0007, 1.0007],
+          u_noise_scale: [1.75, 1.75],
           u_time: time * 0.0003, // 0.0001
           u_mix: 0.965, // 0.85
         };
@@ -153,27 +142,35 @@ const App: Component = () => {
         if (videoEl?.readyState === undefined || videoEl?.readyState < 2) return;
 
         if (twgl.resizeCanvasToDisplaySize(gl.canvas as HTMLCanvasElement)) {
-          twgl.resizeFramebufferInfo(gl, feedbackFramebufferInfo);
-          twgl.resizeFramebufferInfo(gl, videoFramebufferInfo);
+          twgl.resizeFramebufferInfo(gl, prevFrameFramebufferInfo);
+          twgl.resizeFramebufferInfo(gl, currFrameFramebufferInfo);
         }
+
+        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
 
         /* Read webcam texture */
         twgl.setTextureFromElement(gl, videoTexture, videoEl, { width: 1920, height: 1080 });
 
-        twgl.bindFramebufferInfo(gl, videoFramebufferInfo);
-        drawFeedbackFx(gl, feedbackFramebufferInfo.attachments[0], videoTexture, time);
+        /* Draw feedback fx using previous frame image from the buffer */
+        twgl.bindFramebufferInfo(gl, currFrameFramebufferInfo);
+        drawFeedbackFx(gl, prevFrameFramebufferInfo.attachments[0], videoTexture, time);
 
-        twgl.bindFramebufferInfo(gl, feedbackFramebufferInfo);
-        drawTextureCentered(gl, videoFramebufferInfo.attachments[0]);
+        /* Draw the new image to the buffer*/
+        twgl.bindFramebufferInfo(gl, prevFrameFramebufferInfo);
+        drawTextureCentered(gl, currFrameFramebufferInfo.attachments[0]);
 
+        /* Draw the new image to the screen */
         twgl.bindFramebufferInfo(gl, null);
-        drawTextureFlipped(gl, videoFramebufferInfo.attachments[0]);
+        drawTextureFlipped(gl, currFrameFramebufferInfo.attachments[0]);
+
       }
 
       const [_, start] = createRAF(
         render
       );
-      
+      startCam();
       start();
     }
   });
@@ -186,7 +183,7 @@ const App: Component = () => {
     const constraints: MediaStreamConstraints = {
       audio: false,
       video: {
-        frameRate: 60,
+        frameRate: 30,
         width: 1920,
         height: 1080,
       },

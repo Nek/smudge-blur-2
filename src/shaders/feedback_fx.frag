@@ -31,6 +31,8 @@ uniform vec2 u_noise_scale;
 uniform float u_time;
 
 #include lygia/generative/curl.glsl
+#include lygia/color/contrast.glsl
+
 #include uv_scale.glsl
 
 vec4 displacement(vec2 uv, float time, vec2 noise_scale) {
@@ -46,11 +48,9 @@ vec4 displacement(vec2 uv, float time, vec2 noise_scale) {
 }
 
 void main() {
-  vec2 texCoord = v_texCoord;
-
   vec4 diffuseColor = texture(u_image, v_texCoord);
-  vec4 displacementColor = displacement(texCoord, u_time, u_noise_scale);
+  vec4 displacementColor = displacement(v_texCoord, u_time, u_noise_scale);
   vec2 displacementCoord = uvScale(v_texCoord, u_zoom) + toCartesian(displacementColor, u_scale);
   vec4 colorDisplaced = texture(u_feedback, displacementCoord);
-  outColor = mix(diffuseColor, colorDisplaced, u_mix);;
+  outColor = contrast(mix(diffuseColor, colorDisplaced, u_mix), 1.012);
 }
