@@ -6,6 +6,7 @@ import * as twgl from "twgl.js";
 import basicVs from "./shaders/basic.vert?raw";
 import textureCenteredFs from "./shaders/texture_centered.frag?raw";
 import textureBasicFs from "./shaders/texture_basic.frag?raw";
+import feedbackFxFs from "./shaders/feedback_fx.frag?raw";
 
 const App: Component = () => {
   let canvasEl: HTMLCanvasElement | undefined;
@@ -80,40 +81,33 @@ const App: Component = () => {
       };
 
       const drawTexturedQuadCenteredBufferInfo = twgl.createBufferInfoFromArrays(gl, quadWithCorrectedUvArrays);
-      const drawTexturedQuadBufferInfo = twgl.createBufferInfoFromArrays(gl, quadArrays);
-
-      const videoFramebufferInfo = twgl.createFramebufferInfo(gl, undefined, 1920, 1080);
-
       const drawTexturedQuadCenteredProgramInfo = twgl.createProgramInfo(gl, [basicVs, textureCenteredFs]);
+
+      const drawTexturedQuadBufferInfo = twgl.createBufferInfoFromArrays(gl, quadArrays);
       const drawTexturedQuadProgramInfo = twgl.createProgramInfo(gl, [basicVs, textureBasicFs]);
 
+      // const drawFxBufferInfo = twgl.createBufferInfoFromArrays(gl, quadArrays);
+      // const drawFxProgramInfo = twgl.createProgramInfo(gl, [basicVs, feedbackFxFs]);
+
+      const videoFramebufferInfo = twgl.createFramebufferInfo(gl, undefined, 1920, 1080);
       const videoTexture = twgl.createTexture(gl, { flipY: 1 });
 
-      function render(time: number) {
-        if (gl === null) return;
-        if (videoEl?.readyState === undefined || videoEl?.readyState < 2) return;
-
-        /* Draw to framebuffer */
-        twgl.bindFramebufferInfo(gl, videoFramebufferInfo);
-
+      function drawTextureCentered(gl: WebGLRenderingContext | WebGL2RenderingContext, texture: WebGLTexture) {
         gl.clearColor(0, 0, 0, 0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        twgl.setTextureFromElement(gl, videoTexture, videoEl, { width: 1920, height: 1080 });
-
         const drawTexturedQuadCenteredUniforms = {
-          u_diffuse: videoTexture,
+          u_diffuse: texture,
           u_aspect: gl.canvas.width / gl.canvas.height,
-          u_time: time * 0.001,
         };
 
         gl.useProgram(drawTexturedQuadCenteredProgramInfo.program);
         twgl.setBuffersAndAttributes(gl, drawTexturedQuadCenteredProgramInfo, drawTexturedQuadCenteredBufferInfo);
         twgl.setUniforms(drawTexturedQuadCenteredProgramInfo, drawTexturedQuadCenteredUniforms);
         twgl.drawBufferInfo(gl, drawTexturedQuadCenteredBufferInfo);
+      }
 
-        /* Draw to canvas */
-        twgl.bindFramebufferInfo(gl, null);
+      function drawTexture(gl: WebGLRenderingContext | WebGL2RenderingContext, texture: WebGLTexture | WebGLRenderbuffer) {
 
         twgl.resizeCanvasToDisplaySize(gl.canvas as HTMLCanvasElement);
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
@@ -122,13 +116,29 @@ const App: Component = () => {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         const drawTexturedQuadUniforms = {
-          u_diffuse: videoFramebufferInfo.attachments[0],
+          u_diffuse: texture,
         };
 
         gl.useProgram(drawTexturedQuadProgramInfo.program);
         twgl.setBuffersAndAttributes(gl, drawTexturedQuadProgramInfo, drawTexturedQuadBufferInfo);
         twgl.setUniforms(drawTexturedQuadProgramInfo, drawTexturedQuadUniforms);
         twgl.drawBufferInfo(gl, drawTexturedQuadBufferInfo);
+      }
+
+      function render() {
+        if (gl === null) return;
+        if (videoEl?.readyState === undefined || videoEl?.readyState < 2) return;
+
+        /* Read webcam texture */
+        twgl.setTextureFromElement(gl, videoTexture, videoEl, { width: 1920, height: 1080 });
+
+        /* Draw to framebuffer */
+        twgl.bindFramebufferInfo(gl, videoFramebufferInfo);
+        drawTextureCentered(gl, videoTexture);
+
+        /* Draw to screen */
+        twgl.bindFramebufferInfo(gl, null);
+        drawTexture(gl, videoFramebufferInfo.attachments[0]);
       }
 
       const [_, start] = createRAF(
