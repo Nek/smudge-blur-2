@@ -96,7 +96,7 @@ const App: Component = () => {
 
       function drawTextureCentered(gl: WebGLRenderingContext | WebGL2RenderingContext, texture: WebGLTexture) {
         gl.clearColor(0, 0, 0, 0);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.clear(gl.COLOR_BUFFER_BIT);
 
         const drawTexturedQuadBasicUniforms = {
           u_diffuse: texture,
@@ -112,7 +112,7 @@ const App: Component = () => {
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
         gl.clearColor(0, 0, 0, 0);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.clear(gl.COLOR_BUFFER_BIT);
 
         const drawTexturedQuadCenteredUniforms = {
           u_diffuse: texture,
@@ -129,7 +129,7 @@ const App: Component = () => {
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
         gl.clearColor(0, 0, 0, 0);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.clear(gl.COLOR_BUFFER_BIT);
 
         const drawFxUniforms = {
           u_feedback: feedback,
@@ -172,6 +172,7 @@ const App: Component = () => {
         render
       );
 
+      startCam();
       start();
     }
   });
@@ -201,7 +202,7 @@ const App: Component = () => {
   }
 
   return (
-    <div class={styles.App} onclick={startCam}>
+    <div class={styles.App}>
       <video
         crossorigin="anonymous"
         style={{
