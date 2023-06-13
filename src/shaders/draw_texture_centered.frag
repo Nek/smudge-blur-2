@@ -6,7 +6,6 @@ precision highp float;
 
 uniform sampler2D u_diffuse;
 uniform float u_aspect;
-uniform float u_time;
 
 in vec2 v_texCoord;
  
