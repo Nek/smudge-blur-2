@@ -3,10 +3,10 @@ import { Component, onMount } from 'solid-js';
 import styles from './App.module.css';
 import createRAF from "@solid-primitives/raf";
 import * as twgl from "twgl.js";
-import basicVs from "./shaders/basic.vert?raw";
-import textureCenteredFs from "./shaders/texture_centered.frag?raw";
-import textureBasicFs from "./shaders/texture_basic.frag?raw";
-import feedbackFxFs from "./shaders/feedback_fx.frag?raw";
+import basicVs from "./shaders/basic.vert";
+import textureCenteredFs from "./shaders/texture_centered.frag";
+import textureBasicFs from "./shaders/texture_basic.frag";
+import feedbackFxFs from "./shaders/feedback_fx.frag";
 
 const App: Component = () => {
   let canvasEl: HTMLCanvasElement | undefined;
@@ -41,11 +41,11 @@ const App: Component = () => {
           numComponents: 2,
           data: [
             0, 0,
-            0, -1,
-            -1, -1,
+            0, 1,
+            1, 1,
             0, 0,
-            -1, -1,
-            -1, 0,
+            1, 1,
+            1, 0,
           ]
         },
       };
@@ -70,27 +70,29 @@ const App: Component = () => {
           numComponents: 2,
           data:
             [
-              0, 1,
-              0, 0,
-              1, 0,
-              0, 1,
-              1, 0,
               1, 1,
+              1, 0,
+              0, 0,
+              1, 1,
+              0, 0,
+              0, 1,
             ]
         },
       };
 
-      const drawTexturedQuadCenteredBufferInfo = twgl.createBufferInfoFromArrays(gl, quadWithCorrectedUvArrays);
-      const drawTexturedQuadCenteredProgramInfo = twgl.createProgramInfo(gl, [basicVs, textureCenteredFs]);
+      const drawTexturedQuadCenteredBufferInfo = twgl.createBufferInfoFromArrays(gl, quadArrays);
+      const drawTexturedQuadCenteredProgramInfo = twgl.createProgramInfo(gl, [basicVs, textureBasicFs]);
 
-      const drawTexturedQuadBufferInfo = twgl.createBufferInfoFromArrays(gl, quadArrays);
-      const drawTexturedQuadProgramInfo = twgl.createProgramInfo(gl, [basicVs, textureBasicFs]);
+      const drawTexturedQuadBufferInfo = twgl.createBufferInfoFromArrays(gl, quadWithCorrectedUvArrays);
+      const drawTexturedQuadProgramInfo = twgl.createProgramInfo(gl, [basicVs, textureCenteredFs]);
 
-      // const drawFxBufferInfo = twgl.createBufferInfoFromArrays(gl, quadArrays);
-      // const drawFxProgramInfo = twgl.createProgramInfo(gl, [basicVs, feedbackFxFs]);
+      const drawFxBufferInfo = twgl.createBufferInfoFromArrays(gl, quadArrays);
+      const drawFxProgramInfo = twgl.createProgramInfo(gl, [basicVs, feedbackFxFs]);
 
       const videoFramebufferInfo = twgl.createFramebufferInfo(gl, undefined, 1920, 1080);
-      const videoTexture = twgl.createTexture(gl, { flipY: 1 });
+      const videoTexture = twgl.createTexture(gl);
+
+      const feedbackFramebufferInfo = twgl.createFramebufferInfo(gl, undefined, 1920, 1080);
 
       function drawTextureCentered(gl: WebGLRenderingContext | WebGL2RenderingContext, texture: WebGLTexture) {
         gl.clearColor(0, 0, 0, 0);
@@ -99,6 +101,7 @@ const App: Component = () => {
         const drawTexturedQuadCenteredUniforms = {
           u_diffuse: texture,
           u_aspect: gl.canvas.width / gl.canvas.height,
+          u_resolution: [gl.canvas.width, gl.canvas.height],
         };
 
         gl.useProgram(drawTexturedQuadCenteredProgramInfo.program);
@@ -107,9 +110,8 @@ const App: Component = () => {
         twgl.drawBufferInfo(gl, drawTexturedQuadCenteredBufferInfo);
       }
 
-      function drawTexture(gl: WebGLRenderingContext | WebGL2RenderingContext, texture: WebGLTexture | WebGLRenderbuffer) {
+      function drawTextureFlipped(gl: WebGLRenderingContext | WebGL2RenderingContext, texture: WebGLTexture | WebGLRenderbuffer) {
 
-        twgl.resizeCanvasToDisplaySize(gl.canvas as HTMLCanvasElement);
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
         gl.clearColor(0, 0, 0, 0);
@@ -117,6 +119,7 @@ const App: Component = () => {
 
         const drawTexturedQuadUniforms = {
           u_diffuse: texture,
+          u_aspect: gl.canvas.width / gl.canvas.height,
         };
 
         gl.useProgram(drawTexturedQuadProgramInfo.program);
@@ -125,20 +128,53 @@ const App: Component = () => {
         twgl.drawBufferInfo(gl, drawTexturedQuadBufferInfo);
       }
 
-      function render() {
+      function drawFeedbackFx(gl: WebGLRenderingContext | WebGL2RenderingContext, feedback: WebGLTexture | WebGLRenderbuffer, texture: WebGLTexture | WebGLRenderbuffer, time: number) {
+
+        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        const drawFxUniforms = {
+          u_feedback: feedback,
+          u_image: texture,
+          u_aspect: gl.canvas.height / gl.canvas.width,
+          u_scale: 0.003,
+          u_zoom: [1.01, 1.01],
+          u_noise_scale: [1.75,1.75],
+          u_time: time * 0.0003,
+        };
+
+        gl.useProgram(drawFxProgramInfo.program);
+        twgl.setBuffersAndAttributes(gl, drawFxProgramInfo, drawFxBufferInfo);
+        twgl.setUniforms(drawFxProgramInfo, drawFxUniforms);
+        twgl.drawBufferInfo(gl, drawTexturedQuadBufferInfo);
+      }
+
+      function render(time: number) {
         if (gl === null) return;
         if (videoEl?.readyState === undefined || videoEl?.readyState < 2) return;
+
+        // twgl.resizeCanvasToDisplaySize(gl.canvas as HTMLCanvasElement);
+
+        if (twgl.resizeCanvasToDisplaySize(gl.canvas as HTMLCanvasElement)) {
+          console.log('resize');
+          // resize the attachments
+          twgl.resizeFramebufferInfo(gl, feedbackFramebufferInfo);
+          twgl.resizeFramebufferInfo(gl, videoFramebufferInfo);
+        }
 
         /* Read webcam texture */
         twgl.setTextureFromElement(gl, videoTexture, videoEl, { width: 1920, height: 1080 });
 
-        /* Draw to framebuffer */
         twgl.bindFramebufferInfo(gl, videoFramebufferInfo);
-        drawTextureCentered(gl, videoTexture);
+        drawFeedbackFx(gl, feedbackFramebufferInfo.attachments[0], videoTexture, time);
 
-        /* Draw to screen */
+        twgl.bindFramebufferInfo(gl, feedbackFramebufferInfo);
+        drawTextureCentered(gl, videoFramebufferInfo.attachments[0]);
+
         twgl.bindFramebufferInfo(gl, null);
-        drawTexture(gl, videoFramebufferInfo.attachments[0]);
+        drawTextureFlipped(gl, videoFramebufferInfo.attachments[0]);
       }
 
       const [_, start] = createRAF(
@@ -189,7 +225,7 @@ const App: Component = () => {
         muted={true}
         ref={videoEl}
       />
-      <canvas width={1920} height={1080} ref={canvasEl}></canvas>
+      <canvas width={1920} height={1080} ref={canvasEl} ondblclick={() => canvasEl!.requestFullscreen()}></canvas>
     </div>
   );
 };

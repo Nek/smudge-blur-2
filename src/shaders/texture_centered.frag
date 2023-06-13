@@ -6,6 +6,7 @@ precision highp float;
 
 uniform sampler2D u_diffuse;
 uniform float u_aspect;
+uniform vec2 u_resolution;
 
 in vec2 v_texCoord;
  
@@ -14,11 +15,9 @@ out vec4 outColor;
  
 void main() {
   vec2 textCoord = v_texCoord;
-  textCoord.x *= u_aspect;
-  vec2 diffuseSize = vec2(textureSize(u_diffuse, 0));
-  float diffuseAspect = diffuseSize.y / diffuseSize.x;
-  textCoord.x *= diffuseAspect;
-  textCoord.x -= (1.0 - u_aspect * diffuseAspect) / 2.0;
+  textCoord.x -= .5;
+  textCoord.x *= u_aspect / 2.;
+  textCoord.x += .5;
   vec4 diffuseColor = texture(u_diffuse, textCoord);
   outColor = diffuseColor;
 }

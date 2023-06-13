@@ -1,5 +1,3 @@
-#version 300 es
-
 vec2 uvScale (vec2 baseUv, float scale) {
     vec2 uv = baseUv;
 
