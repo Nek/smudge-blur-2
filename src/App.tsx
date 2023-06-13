@@ -1,4 +1,4 @@
-import { Component, onMount } from 'solid-js';
+import { type Component, onMount } from 'solid-js';
 
 import styles from './App.module.css';
 import createRAF from "@solid-primitives/raf";
@@ -11,6 +11,7 @@ import feedbackFxFs from "./shaders/feedback_fx.frag";
 const App: Component = () => {
   let canvasEl: HTMLCanvasElement | undefined;
   let videoEl: HTMLVideoElement | undefined;
+  let messageEl: HTMLButtonElement | undefined;
 
   onMount(() => {
     if (canvasEl !== undefined) {
@@ -172,14 +173,15 @@ const App: Component = () => {
       const [_, start] = createRAF(
         render
       );
-
-      startCam();
+      
       start();
     }
   });
 
   async function startCam() {
     if (!videoEl) return;
+
+    messageEl!.style.opacity = '0';
 
     const constraints: MediaStreamConstraints = {
       audio: false,
@@ -206,11 +208,6 @@ const App: Component = () => {
     <div class={styles.App}>
       <video
         crossorigin="anonymous"
-        style={{
-          position: "absolute",
-          "z-index": -1,
-          display: "none",
-        }}
         width={1920}
         height={1080}
         controls={false}
@@ -218,7 +215,8 @@ const App: Component = () => {
         muted={true}
         ref={videoEl}
       />
-      <canvas width={1920} height={1080} ref={canvasEl} ondblclick={() => canvasEl!.requestFullscreen()}></canvas>
+      <canvas ref={canvasEl} onclick={startCam} ondblclick={() => canvasEl!.requestFullscreen()}></canvas>
+      <div ref={messageEl} class={styles.message}>Click ot tap to start camera</div>
     </div>
   );
 };
