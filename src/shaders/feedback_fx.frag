@@ -10,6 +10,8 @@ uniform sampler2D u_image;
 uniform float u_scale;// = 0.001;
 uniform vec2 u_zoom;//1.01
 
+uniform float u_mix;// = 0.5;
+
 #define TWO_PI = 6.28318531;
 
 in vec2 v_texCoord;
@@ -50,5 +52,5 @@ void main() {
   vec4 displacementColor = displacement(texCoord, u_time, u_noise_scale);
   vec2 displacementCoord = uvScale(v_texCoord, u_zoom) + toCartesian(displacementColor, u_scale);
   vec4 colorDisplaced = texture(u_feedback, displacementCoord);
-  outColor = mix(diffuseColor, colorDisplaced, 0.965);;
+  outColor = mix(diffuseColor, colorDisplaced, u_mix);;
 }

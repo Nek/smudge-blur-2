@@ -137,7 +137,8 @@ const App: Component = () => {
           u_scale: 0.001,
           u_zoom: [1.001, 1.001],
           u_noise_scale: [1.75,1.75],
-          u_time: time * 0.0003,
+          u_time: time * 0.0003, // 0.0001
+          u_mix: 0.965, // 0.85
         };
 
         gl.useProgram(drawFxProgramInfo.program);
