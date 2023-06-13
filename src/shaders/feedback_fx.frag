@@ -28,15 +28,15 @@ vec2 toCartesian(vec4 displacementMap, float scale) {
 uniform vec2 u_noise_scale;
 uniform float u_time;
 
-#include lygia/generative/snoise.glsl
+#include lygia/generative/curl.glsl
 #include uv_scale.glsl
 
-vec4 displacement(vec2 uv, vec2 resolution, float time, vec2 noise_scale) {
+vec4 displacement(vec2 uv, float time, vec2 noise_scale) {
     vec2 st = uv.xy * noise_scale;
 
     vec3 color = vec3(0.0);
 
-    color = snoise3(vec3(st, cos(time) * 0.5 + 0.5));
+    color = curl(vec3(st, cos(time) * 0.5 + 0.5));
     color *= 0.5;
     color += .5;
 
@@ -47,8 +47,8 @@ void main() {
   vec2 texCoord = v_texCoord;
 
   vec4 diffuseColor = texture(u_image, v_texCoord);
-  vec4 displacementColor = displacement(texCoord, vec2(textureSize(u_feedback, 0)), u_time, u_noise_scale);
+  vec4 displacementColor = displacement(texCoord, u_time, u_noise_scale);
   vec2 displacementCoord = uvScale(v_texCoord, u_zoom) + toCartesian(displacementColor, u_scale);
   vec4 colorDisplaced = texture(u_feedback, displacementCoord);
-  outColor = mix(diffuseColor, colorDisplaced, 0.98);;
+  outColor = mix(diffuseColor, colorDisplaced, 0.965);;
 }

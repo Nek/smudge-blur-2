@@ -126,7 +126,6 @@ const App: Component = () => {
       }
 
       function drawFeedbackFx(gl: WebGLRenderingContext | WebGL2RenderingContext, feedback: WebGLTexture | WebGLRenderbuffer, texture: WebGLTexture | WebGLRenderbuffer, time: number) {
-
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
         gl.clearColor(0, 0, 0, 0);
@@ -151,11 +150,7 @@ const App: Component = () => {
         if (gl === null) return;
         if (videoEl?.readyState === undefined || videoEl?.readyState < 2) return;
 
-        // twgl.resizeCanvasToDisplaySize(gl.canvas as HTMLCanvasElement);
-
         if (twgl.resizeCanvasToDisplaySize(gl.canvas as HTMLCanvasElement)) {
-          console.log('resize');
-          // resize the attachments
           twgl.resizeFramebufferInfo(gl, feedbackFramebufferInfo);
           twgl.resizeFramebufferInfo(gl, videoFramebufferInfo);
         }
