@@ -4,8 +4,8 @@ import styles from './App.module.css';
 import createRAF from "@solid-primitives/raf";
 import * as twgl from "twgl.js";
 import basicVs from "./shaders/basic.vert";
-import textureCenteredFs from "./shaders/texture_centered.frag";
-import textureBasicFs from "./shaders/texture_basic.frag";
+import textureCenteredFs from "./shaders/texture_quad_centered.frag";
+import textureBasicFs from "./shaders/texture_quad_basic.frag";
 import feedbackFxFs from "./shaders/feedback_fx.frag";
 
 const App: Component = () => {
@@ -21,7 +21,7 @@ const App: Component = () => {
         throw new Error("WebGL 2.0 is not supported");
       }
 
-      const quadWithCorrectedUvArrays: twgl.Arrays = {
+      const flippedUvQuad: twgl.Arrays = {
         position: {
           type: gl.FLOAT,
           normalize: false,
@@ -50,7 +50,7 @@ const App: Component = () => {
         },
       };
 
-      const quadArrays: twgl.Arrays = {
+      const uvQuad: twgl.Arrays = {
         position: {
           type: gl.FLOAT,
           normalize: false,
@@ -80,52 +80,49 @@ const App: Component = () => {
         },
       };
 
-      const drawTexturedQuadCenteredBufferInfo = twgl.createBufferInfoFromArrays(gl, quadArrays);
-      const drawTexturedQuadCenteredProgramInfo = twgl.createProgramInfo(gl, [basicVs, textureBasicFs]);
+      const drawTexturedQuadBasicBufferInfo = twgl.createBufferInfoFromArrays(gl, uvQuad);
+      const drawTexturedQuadBasicProgramInfo = twgl.createProgramInfo(gl, [basicVs, textureBasicFs]);
 
-      const drawTexturedQuadBufferInfo = twgl.createBufferInfoFromArrays(gl, quadWithCorrectedUvArrays);
-      const drawTexturedQuadProgramInfo = twgl.createProgramInfo(gl, [basicVs, textureCenteredFs]);
+      const drawTexturedQuadCenteredBufferInfo = twgl.createBufferInfoFromArrays(gl, flippedUvQuad);
+      const drawTexturedQuadCenteredProgramInfo = twgl.createProgramInfo(gl, [basicVs, textureCenteredFs]);
 
-      const drawFxBufferInfo = twgl.createBufferInfoFromArrays(gl, quadArrays);
+      const drawFxBufferInfo = twgl.createBufferInfoFromArrays(gl, uvQuad);
       const drawFxProgramInfo = twgl.createProgramInfo(gl, [basicVs, feedbackFxFs]);
 
-      const videoFramebufferInfo = twgl.createFramebufferInfo(gl, undefined, 1920, 1080);
+      const videoFramebufferInfo = twgl.createFramebufferInfo(gl, undefined, window.innerWidth, window.innerHeight);
       const videoTexture = twgl.createTexture(gl);
 
-      const feedbackFramebufferInfo = twgl.createFramebufferInfo(gl, undefined, 1920, 1080);
+      const feedbackFramebufferInfo = twgl.createFramebufferInfo(gl, undefined, window.innerWidth, window.innerHeight);
 
       function drawTextureCentered(gl: WebGLRenderingContext | WebGL2RenderingContext, texture: WebGLTexture) {
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        const drawTexturedQuadBasicUniforms = {
+          u_diffuse: texture,
+        };
+
+        gl.useProgram(drawTexturedQuadBasicProgramInfo.program);
+        twgl.setBuffersAndAttributes(gl, drawTexturedQuadBasicProgramInfo, drawTexturedQuadBasicBufferInfo);
+        twgl.setUniforms(drawTexturedQuadBasicProgramInfo, drawTexturedQuadBasicUniforms);
+        twgl.drawBufferInfo(gl, drawTexturedQuadBasicBufferInfo);
+      }
+
+      function drawTextureFlipped(gl: WebGLRenderingContext | WebGL2RenderingContext, texture: WebGLTexture | WebGLRenderbuffer) {
+        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+
         gl.clearColor(0, 0, 0, 0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         const drawTexturedQuadCenteredUniforms = {
           u_diffuse: texture,
           u_aspect: gl.canvas.width / gl.canvas.height,
-          u_resolution: [gl.canvas.width, gl.canvas.height],
         };
 
         gl.useProgram(drawTexturedQuadCenteredProgramInfo.program);
         twgl.setBuffersAndAttributes(gl, drawTexturedQuadCenteredProgramInfo, drawTexturedQuadCenteredBufferInfo);
         twgl.setUniforms(drawTexturedQuadCenteredProgramInfo, drawTexturedQuadCenteredUniforms);
         twgl.drawBufferInfo(gl, drawTexturedQuadCenteredBufferInfo);
-      }
-
-      function drawTextureFlipped(gl: WebGLRenderingContext | WebGL2RenderingContext, texture: WebGLTexture | WebGLRenderbuffer) {
-
-        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-
-        gl.clearColor(0, 0, 0, 0);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-        const drawTexturedQuadUniforms = {
-          u_diffuse: texture,
-          u_aspect: gl.canvas.width / gl.canvas.height,
-        };
-
-        gl.useProgram(drawTexturedQuadProgramInfo.program);
-        twgl.setBuffersAndAttributes(gl, drawTexturedQuadProgramInfo, drawTexturedQuadBufferInfo);
-        twgl.setUniforms(drawTexturedQuadProgramInfo, drawTexturedQuadUniforms);
-        twgl.drawBufferInfo(gl, drawTexturedQuadBufferInfo);
       }
 
       function drawFeedbackFx(gl: WebGLRenderingContext | WebGL2RenderingContext, feedback: WebGLTexture | WebGLRenderbuffer, texture: WebGLTexture | WebGLRenderbuffer, time: number) {
@@ -138,9 +135,8 @@ const App: Component = () => {
         const drawFxUniforms = {
           u_feedback: feedback,
           u_image: texture,
-          u_aspect: gl.canvas.height / gl.canvas.width,
-          u_scale: 0.003,
-          u_zoom: [1.01, 1.01],
+          u_scale: 0.001,
+          u_zoom: [1.001, 1.001],
           u_noise_scale: [1.75,1.75],
           u_time: time * 0.0003,
         };
@@ -148,7 +144,7 @@ const App: Component = () => {
         gl.useProgram(drawFxProgramInfo.program);
         twgl.setBuffersAndAttributes(gl, drawFxProgramInfo, drawFxBufferInfo);
         twgl.setUniforms(drawFxProgramInfo, drawFxUniforms);
-        twgl.drawBufferInfo(gl, drawTexturedQuadBufferInfo);
+        twgl.drawBufferInfo(gl, drawTexturedQuadCenteredBufferInfo);
       }
 
       function render(time: number) {
